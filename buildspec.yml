@@ -1,4 +1,4 @@
-version: 0.2
+  version: 0.2
 
 env:
   variables:
@@ -17,8 +17,9 @@ phases:
     commands:
       - echo ${BUCKET_NAME}
       - aws s3 cp s3://${BUCKET_NAME}/finastra/GLExtract/AggregatedGLExtract/in/${FILE_NAME} .
+
       - |
-          # Use awk to update only the rows where the first two columns are blank
+          # Use awk to update only the rows where both NOMINALCODE and NOMINALDESCRIPTION are missing
           awk -F, '{
             if ($1 == "" && $2 == "") {
               $1 = "4000692"
@@ -45,6 +46,7 @@ phases:
             # Exit with status code 1 to indicate an issue
             exit 1
           fi
+
       - pwd
       - ls -ltr
       - echo $DATE_FOLDER
