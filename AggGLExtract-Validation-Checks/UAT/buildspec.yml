@@ -30,12 +30,3 @@ phases:
                exit 1
 
           fi
-       - pwd
-       - ls -ltr
-       - echo $DATE_FOLDER
-       - python agg_GLExtract.py ${FILE_NAME} ${DATE_FOLDER}
-       - aws s3 cp validation_report_AggGLExtract_${DATE_FOLDER}.txt  
-         s3://${BUCKET_NAME}/openKM/CoreAutomation-Validation-Checks/AggGLExtract/validation_report_AggGLExtract_${DATE_FOLDER}.txt
-       - aws codebuild start-build 
-                  --project-name 'Finastra-to-SAP-file-transformation' 
-                  --environment-variables-override "[{\"name\":\"FILENAME\",\"value\":\"${FILE_NAME}\",\"type\":\"PLAINTEXT\"}]"
