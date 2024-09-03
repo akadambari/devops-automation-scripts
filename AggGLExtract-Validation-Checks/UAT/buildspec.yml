@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    BUCKET_NAME: "tonikbank-sftp-uat"
+    BUCKET_NAME: "tonik-bank-sftp-uat"
     FILE_NAME:
     DATE_FOLDER:    
 phases:
