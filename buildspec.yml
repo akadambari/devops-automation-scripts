@@ -3,7 +3,7 @@ version: 0.2
 env:
   variables:
     BUCKET_NAME: "tonik-bank-sftp-uat"
-    FILE_NAME: "BF_AggregatedGLTransactionExtract_2024-09-02_213228.csv"
+    FILE_NAME: "BF_AggregatedGLTransactionExtract_2024-09-03_213228.csv"
     DATE_FOLDER: ""
 
 phases:
