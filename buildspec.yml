@@ -4,50 +4,50 @@ env:
   variables:
     BUCKET_NAME: "tonik-bank-sftp-uat"
     FILE_NAME: "BF_AggregatedGLTransactionExtract_2024-09-02_213228.csv"
-    DATE_FOLDER:    
-phases:
-   install:
-     runtime-versions:
-       python: 3.9
-     commands:
-       - pip3 install -r requirements.txt
-   build:
-     commands:
-       - echo ${BUCKET_NAME}
-       - aws s3 cp s3://${BUCKET_NAME}/finastra/GLExtract/AggregatedGLExtract/in/${FILE_NAME} . 
-       - |
-             # Use awk to update only the rows where the first two columns are blank
-       awk -F, '{
-     if ($1 == "" && $2 == "") 
-        print "4000692,Off BS Loan Account," $3","$4","$5","$6","$7","$8","$9;
-    else 
-        print $0;
-}' ${FILE_NAME} > Data_check_${FILE_NAME}
+    DATE_FOLDER: ""
 
-# Compare the number of lines in the original and modified files
-if [ `cat ${FILE_NAME} | wc -l` -eq `cat Data_check_${FILE_NAME} | wc -l` ]; then
-    echo "No issue with data"
-else
-    echo "Data issue"
-    filename=`echo ${FILE_NAME} | cut -d '.' -f1`
-    ext=`echo ${FILE_NAME} | cut -d '.' -f2`
-    mv Data_check_${FILE_NAME} "${filename}_1.${ext}"
-    
-    # Upload the modified file back to S3
-    aws s3 cp "${filename}_1.${ext}" s3://${BUCKET_NAME}/finastra/GLExtract/AggregatedGLExtract/in/"${filename}_1.${ext}"
-    
-    # Update FILE_NAME to the new file name
-    FILE_NAME=${filename}_1.${ext}
-    
-    # Exit with status code 1 to indicate an issue
-    exit 1
-fi
-       - pwd
-       - ls -ltr
-       - echo $DATE_FOLDER
-       - python agg_GLExtract.py ${FILE_NAME} ${DATE_FOLDER}
-       - aws s3 cp validation_report_AggGLExtract_${DATE_FOLDER}.txt  
-         s3://${BUCKET_NAME}/openKM/CoreAutomation-Validation-Checks/AggGLExtract/validation_report_AggGLExtract_${DATE_FOLDER}.txt
-       - aws codebuild start-build 
-                  --project-name 'Finastra-to-SAP-file-transformation' 
-                  --environment-variables-override "[{\"name\":\"FILENAME\",\"value\":\"${FILE_NAME}\",\"type\":\"PLAINTEXT\"}]"
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - pip3 install -r requirements.txt
+
+  build:
+    commands:
+      - echo ${BUCKET_NAME}
+      - aws s3 cp s3://${BUCKET_NAME}/finastra/GLExtract/AggregatedGLExtract/in/${FILE_NAME} .
+      - |
+          # Use awk to update only the rows where the first two columns are blank
+          awk -F, '{
+            if ($1 == "" && $2 == "") {
+              $1 = "4000692"
+              $2 = "Off BS Loan Account"
+            }
+            print $0
+          }' OFS=, ${FILE_NAME} > Data_check_${FILE_NAME}
+
+          # Compare the number of lines in the original and modified files
+          if [ `cat ${FILE_NAME} | wc -l` -eq `cat Data_check_${FILE_NAME} | wc -l` ]; then
+            echo "No issue with data"
+          else
+            echo "Data issue"
+            filename=`echo ${FILE_NAME} | cut -d '.' -f1`
+            ext=`echo ${FILE_NAME} | cut -d '.' -f2`
+            mv Data_check_${FILE_NAME} "${filename}_1.${ext}"
+
+            # Upload the modified file back to S3
+            aws s3 cp "${filename}_1.${ext}" s3://${BUCKET_NAME}/finastra/GLExtract/AggregatedGLExtract/in/"${filename}_1.${ext}"
+
+            # Update FILE_NAME to the new file name
+            FILE_NAME=${filename}_1.${ext}
+
+            # Exit with status code 1 to indicate an issue
+            exit 1
+          fi
+      - pwd
+      - ls -ltr
+      - echo $DATE_FOLDER
+      - python agg_GLExtract.py ${FILE_NAME} ${DATE_FOLDER}
+      - aws s3 cp validation_report_AggGLExtract_${DATE_FOLDER}.txt s3://${BUCKET_NAME}/openKM/CoreAutomation-Validation-Checks/AggGLExtract/validation_report_AggGLExtract_${DATE_FOLDER}.txt
+      - aws codebuild start-build --project-name 'Finastra-to-SAP-file-transformation' --environment-variables-override "[{\"name\":\"FILENAME\",\"value\":\"${FILE_NAME}\",\"type\":\"PLAINTEXT\"}]"
