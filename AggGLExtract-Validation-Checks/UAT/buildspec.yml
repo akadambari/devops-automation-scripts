@@ -1,0 +1,41 @@
+version: 0.2
+
+env:
+  variables:
+    BUCKET_NAME: "tonikbank-sftp-uat"
+    FILE_NAME:
+    DATE_FOLDER:    
+phases:
+   install:
+     runtime-versions:
+       python: 3.9
+     commands:
+       - pip3 install -r requirements.txt
+   build:
+     commands:
+       - echo ${BUCKET_NAME}
+       - aws s3 cp s3://${BUCKET_NAME}/finastra/GLExtract/AggregatedGLExtract/in/${FILE_NAME} . 
+       - |
+          sed '/^,/d' ${FILE_NAME} > Data_check_${FILE_NAME}
+          if [ `cat ${FILE_NAME}|wc -l` -eq `cat Data_check_${FILE_NAME}|wc -l` ] 
+          then
+               echo "No issue with data"
+          else
+               echo "Data issue"
+               filename=`echo ${FILE_NAME} | cut -d '.' -f1`
+               ext=`echo ${FILE_NAME} | cut -d '.' -f2`
+               mv Data_check_${FILE_NAME} "${filename}_1.${ext}"
+               aws s3 cp "${filename}_1.${ext}" s3://${BUCKET_NAME}/finastra/GLExtract/AggregatedGLExtract/in/"${filename}_1.${ext}"
+               FILE_NAME=${filename}_1.${ext}
+               exit 1
+
+          fi
+       - pwd
+       - ls -ltr
+       - echo $DATE_FOLDER
+       - python agg_GLExtract.py ${FILE_NAME} ${DATE_FOLDER}
+       - aws s3 cp validation_report_AggGLExtract_${DATE_FOLDER}.txt  
+         s3://${BUCKET_NAME}/openKM/CoreAutomation-Validation-Checks/AggGLExtract/validation_report_AggGLExtract_${DATE_FOLDER}.txt
+       - aws codebuild start-build 
+                  --project-name 'Finastra-to-SAP-file-transformation' 
+                  --environment-variables-override "[{\"name\":\"FILENAME\",\"value\":\"${FILE_NAME}\",\"type\":\"PLAINTEXT\"}]"
