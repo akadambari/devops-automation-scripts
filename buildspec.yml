@@ -3,7 +3,7 @@ version: 0.2
 env:
   variables:
     BUCKET_NAME: "tonik-bank-sftp-uat"
-    FILE_NAME:
+    FILE_NAME:    
     DATE_FOLDER:    
 phases:
    install:
@@ -14,7 +14,6 @@ phases:
    build:
      commands:
        - echo ${BUCKET_NAME}
-       - echo "FILE_NAME: ${FILE_NAME}"
        - aws s3 cp s3://${BUCKET_NAME}/finastra/GLExtract/AggregatedGLExtract/in/${FILE_NAME} . 
        - |
           sed '/^,/d' ${FILE_NAME} > Data_check_${FILE_NAME}
